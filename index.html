@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- Ensures it looks like an app on mobile screens -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Driver Delivery Log</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 400px; margin: 0 auto; background: white; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h2 { margin-top: 0; font-size: 22px; text-align: center;}
+        
+        /* Record Button Styles */
+        #recordBtn { width: 100%; padding: 18px; font-size: 18px; font-weight: bold; color: white; background-color: #007bff; border: none; border-radius: 50px; cursor: pointer; transition: 0.3s; margin-bottom: 20px;}
+        #recordBtn.recording { background-color: #dc3545; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(220, 53, 69, 0); } 100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); } }
+        
+        #status { text-align: center; margin-bottom: 20px; font-weight: 500; color: #666; }
+        
+        /* Form Styles */
+        #confirmationForm { display: none; margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;}
+        label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 14px; color: #555;}
+        input[type="text"], input[type="number"] { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 16px;}
+        .warning { color: #856404; background-color: #fff3cd; border: 1px solid #ffeeba; padding: 10px; border-radius: 6px; font-size: 13px; margin-bottom: 15px; display: none;}
+        
+        #submitBtn { width: 100%; padding: 14px; font-size: 16px; font-weight: bold; color: white; background-color: #28a745; border: none; border-radius: 8px; cursor: pointer;}
+        #submitBtn:disabled { background-color: #94d3a2; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Delivery Logger</h2>
+    
+    <button id="recordBtn">Tap to Speak</button>
+    <div id="status">Ready</div>
+
+    <div id="confirmationForm">
+        <div id="warningBox" class="warning">⚠️ Please review missing or unclear fields.</div>
+        
+        <label>Driver Name</label>
+        <input type="text" id="driverInput">
+        
+        <label>Restaurants (Comma separated)</label>
+        <input type="text" id="restaurantsInput">
+        
+        <label>Total Cylinders</label>
+        <input type="number" id="cylindersInput">
+        
+        <button id="submitBtn">Submit to Sheet</button>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // PASTE YOUR GOOGLE APPS SCRIPT URL HERE
+    // ==========================================
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbzGHUQMD09-7vBBR6kDdqrA7NAn_sE4dZiYzwj10HpI0-hOEmBV58xppFyarcoK8qzk/exec";
+
+    let mediaRecorder;
+    let audioChunks = [];
+    const recordBtn = document.getElementById('recordBtn');
+    const statusTxt = document.getElementById('status');
+    const form = document.getElementById('confirmationForm');
+    const warningBox = document.getElementById('warningBox');
+    const submitBtn = document.getElementById('submitBtn');
+
+    // --- 1. Audio Recording Logic ---
+    recordBtn.addEventListener('click', async () => {
+        if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+            startRecording();
+        } else if (mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+        }
+    });
+
+    async function startRecording() {
+        try {
+            // Request microphone access
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+
+            mediaRecorder.ondataavailable = event => {
+                if (event.data.size > 0) audioChunks.push(event.data);
+            };
+
+            mediaRecorder.onstop = processAudio;
+
+            mediaRecorder.start();
+            recordBtn.textContent = "Tap to Stop";
+            recordBtn.classList.add("recording");
+            statusTxt.textContent = "Listening...";
+            form.style.display = "none";
+        } catch (err) {
+            alert("Microphone access denied or failed.");
+        }
+    }
+
+    // --- 2. Convert Audio and Send to GAS Proxy ---
+    async function processAudio() {
+        recordBtn.textContent = "Tap to Speak";
+        recordBtn.classList.remove("recording");
+        statusTxt.textContent = "Processing with AI...";
+        
+        // Stop all mic tracks to save battery
+        mediaRecorder.stream.getTracks().forEach(track => track.stop());
+
+        const audioBlob = new Blob(audioChunks);
+        
+        // Convert Blob to Base64 to send over HTTP
+        const reader = new FileReader();
+        reader.readAsDataURL(audioBlob);
+        reader.onloadend = async () => {
+            const base64data = reader.result.split(',')[1];
+            
+            try {
+                const response = await fetch(GAS_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: "PROCESS_AUDIO",
+                        audioBase64: base64data,
+                        mimeType: audioBlob.type
+                    })
+                });
+                
+                const result = await response.json();
+                if(result.success) {
+                    populateForm(result.data.extracted);
+                } else {
+                    alert("Error: " + result.error);
+                    statusTxt.textContent = "Ready";
+                }
+            } catch (error) {
+                alert("Network error talking to server.");
+                statusTxt.textContent = "Ready";
+            }
+        };
+    }
+
+    // --- 3. Display Data for Driver Confirmation ---
+    function populateForm(data) {
+        statusTxt.textContent = "Review and Confirm";
+        form.style.display = "block";
+        
+        document.getElementById('driverInput').value = data.driver_name || "";
+        document.getElementById('restaurantsInput').value = (data.restaurants || []).join(", ");
+        document.getElementById('cylindersInput').value = data.cylinders || "";
+
+        // Show warning if AI flagged anything
+        if (data.confidence_flags && data.confidence_flags.length > 0) {
+            warningBox.style.display = "block";
+            warningBox.innerHTML = `⚠️ Please check: ${data.confidence_flags.join(", ")}`;
+        } else {
+            warningBox.style.display = "none";
+        }
+    }
+
+    // --- 4. Submit Confirmed Data to Google Sheets ---
+    submitBtn.addEventListener('click', async () => {
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Saving...";
+
+        const payload = {
+            driver_name: document.getElementById('driverInput').value,
+            restaurants: document.getElementById('restaurantsInput').value,
+            cylinders: document.getElementById('cylindersInput').value,
+            confidence_flags: warningBox.style.display === "block" ? ["Manually Reviewed"] : []
+        };
+
+        try {
+            const response = await fetch(GAS_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    action: "SUBMIT_DELIVERY",
+                    payload: payload
+                })
+            });
+            
+            const result = await response.json();
+            if(result.success) {
+                alert("Delivery Logged Successfully!");
+                form.style.display = "none";
+                statusTxt.textContent = "Ready";
+            } else {
+                alert("Error saving: " + result.error);
+            }
+        } catch (error) {
+            alert("Network error.");
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Submit to Sheet";
+        }
+    });
+</script>
+
+</body>
+</html>
