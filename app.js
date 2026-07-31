@@ -2,7 +2,7 @@
 // CONFIGURATION
 // ==========================================
 // Replace this with your newly deployed Google Apps Script Web App URL
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwEY8HxWAvqP9LU1tHYC7pXSyEqdwSDv0DCT8SciG-2_zOOVMICcUwiaKOk0oactJAh/exec";
+const APPS_SCRIPT_URL = "YOUR_WEB_APP_URL_HERE";
 
 // ==========================================
 // DOM ELEMENTS
@@ -122,44 +122,64 @@ async function processAudio() {
     
     reader.onloadend = async () => {
         const base64AudioMessage = reader.result.split(',')[1];
+        const selectedDriver = driverSelect.value; // Store the dropdown selection
         
-        const payload = {
+        // Step 1: Send to AI for extraction
+        const processPayload = {
             action: "PROCESS_AUDIO",
             audioBase64: base64AudioMessage,
-            mimeType: 'audio/webm',
-            driverName: driverSelect.value // Pass the selected driver directly
+            mimeType: 'audio/webm'
         };
 
         try {
+            statusText.textContent = "Extracting data...";
             const response = await fetch(APPS_SCRIPT_URL, {
                 method: "POST",
-                // text/plain is used to avoid preflight CORS errors on POST requests
                 headers: { "Content-Type": "text/plain" },
-                body: JSON.stringify(payload)
+                body: JSON.stringify(processPayload)
             });
 
             const result = await response.json();
             
             if (result.success) {
-                statusText.textContent = "Extraction complete! Check Google Sheet.";
-                console.log("Extracted Data:", result.data);
+                statusText.textContent = "Extraction complete! Saving to sheet...";
+                console.log("Extracted Data:", result.data.extracted);
+                
+                // Step 2: Combine AI data with UI driver name
+                const finalData = result.data.extracted;
+                finalData.driver_name = selectedDriver; 
+                
+                const submitPayload = {
+                    action: "SUBMIT_DELIVERY",
+                    payload: finalData
+                };
+
+                // Step 3: Send the save command
+                const saveResponse = await fetch(APPS_SCRIPT_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain" },
+                    body: JSON.stringify(submitPayload)
+                });
+                
+                const saveResult = await saveResponse.json();
+                
+                if (saveResult.success) {
+                    statusText.textContent = "Delivery logged successfully!";
+                } else {
+                    statusText.textContent = "Error saving to sheet: " + saveResult.error;
+                }
                 
                 // Reset UI for next delivery
-                setTimeout(() => {
-                    recordBtn.textContent = "Tap to Speak";
-                    recordBtn.disabled = false;
-                    driverSelect.disabled = false;
-                    statusText.textContent = `Ready to record for ${driverSelect.value}.`;
-                }, 3000);
+                setTimeout(resetUI, 3000);
 
             } else {
-                statusText.textContent = "Error: " + result.error;
-                resetUI();
+                statusText.textContent = "Extraction Error: " + result.error;
+                setTimeout(resetUI, 3000);
             }
         } catch (err) {
             console.error("Pipeline error:", err);
             statusText.textContent = "Failed to connect to backend.";
-            resetUI();
+            setTimeout(resetUI, 3000);
         }
     };
 }
@@ -168,6 +188,7 @@ function resetUI() {
     recordBtn.textContent = "Tap to Speak";
     recordBtn.disabled = false;
     driverSelect.disabled = false;
+    statusText.textContent = `Ready to record for ${driverSelect.value}.`;
 }
 
 // Start the app
