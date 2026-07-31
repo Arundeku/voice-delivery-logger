@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin CRM - Delivery Tracker</title>
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-container" class="active-view">
+        <div class="login-box">
+            <h2>Admin Portal</h2>
+            <p>Please log in to access the CRM.</p>
+            <input type="text" id="admin-username" placeholder="Username" autocomplete="off">
+            <input type="password" id="admin-password" placeholder="Password">
+            <button id="login-btn">Secure Login</button>
+            <p id="login-status" class="error-text"></p>
+        </div>
+    </div>
+
+    <!-- CRM DASHBOARD (Hidden by default) -->
+    <div id="dashboard-container" class="hidden-view">
+        <nav class="sidebar">
+            <h2>System Admin</h2>
+            <ul>
+                <li id="nav-logs" class="active">Delivery Logs</li>
+                <li id="nav-drivers">Manage Drivers</li>
+                <li id="nav-settings">System Controls</li>
+            </ul>
+            <button id="logout-btn">Log Out</button>
+        </nav>
+
+        <main class="content-area">
+            <header>
+                <h1 id="page-title">Delivery Logs</h1>
+            </header>
+            
+            <!-- Dynamic Content Will Load Here -->
+            <div id="dynamic-content">
+                <p>Awaiting authentication...</p>
+            </div>
+        </main>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>
