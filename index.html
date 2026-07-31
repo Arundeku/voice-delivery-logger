@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery Logger</title>
+    <!-- Link to our separate CSS file -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h2>Delivery Logger</h2>
+        
+        <!-- Step 1: Driver Selection -->
+        <div class="input-group">
+            <label for="driver-select">Select Driver:</label>
+            <select id="driver-select">
+                <option value="">Loading drivers...</option>
+            </select>
+        </div>
+
+        <!-- Step 2: Audio Capture -->
+        <button id="record-btn" disabled>Tap to Speak</button>
+        <p id="status-text">Waiting for driver selection...</p>
+    </div>
+
+    <!-- Link to our separate JavaScript file -->
+    <!-- We put it at the end of the body so the HTML loads first -->
+    <script src="app.js"></script>
+</body>
+</html>
