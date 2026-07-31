@@ -3,7 +3,7 @@
 // ==========================================
 
 // IMPORTANT: Paste your actual Google Apps Script URL here
-const APPS_SCRIPT_URL = "YOUR_WEB_APP_URL_HERE"; 
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwEY8HxWAvqP9LU1tHYC7pXSyEqdwSDv0DCT8SciG-2_zOOVMICcUwiaKOk0oactJAh/exec"; 
 
 // DOM Elements - Login View
 const loginContainer = document.getElementById("login-container");
