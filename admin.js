@@ -54,11 +54,13 @@ loginBtn.addEventListener("click", async () => {
             loginContainer.style.display = "none";
             dashboardContainer.style.display = "flex"; // Using flexbox for dashboard layout
 
+            console.log("Authentication successful.");
+            
             // Fetch the data!
             fetchLogs();
             
-            console.log("Authentication successful.");
-            // We will add the function to load the Google Sheets data here later!
+
+          
 
         } else {
             // Failure: Show error message
