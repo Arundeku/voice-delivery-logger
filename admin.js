@@ -110,7 +110,7 @@ async function fetchLogs() {
         }
     } catch (err) {
         console.error("Fetch error:", err);
-        contentArea.innerHTML = "<p style="color:red;">Failed to connect to the database.</p>";
+        contentArea.innerHTML = '<p style="color:red;">Failed to connect to the database.</p>';
     }
 }
 
