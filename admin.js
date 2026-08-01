@@ -54,10 +54,12 @@ loginBtn.addEventListener("click", async () => {
             loginContainer.style.display = "none";
             dashboardContainer.style.display = "flex"; // Using flexbox for dashboard layout
 
+             // Fetch the data!
+            fetchLogs();
+            
             console.log("Authentication successful.");
             
-            // Fetch the data!
-            fetchLogs();
+           
             
         } else {
             // Failure: Show error message
