@@ -160,3 +160,25 @@ body {
 .content-area h1 {
     color: #2c3e50;
 }
+
+/* --- ACTION BUTTONS --- */
+.action-btn {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    font-weight: 600;
+    transition: background 0.2s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.action-btn:hover {
+    background-color: #2980b9;
+}
+
+.action-btn:active {
+    transform: translateY(1px);
+}
