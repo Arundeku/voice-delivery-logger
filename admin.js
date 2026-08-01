@@ -143,3 +143,16 @@ function renderTable(data) {
     html += '</tbody></table>';
     contentArea.innerHTML = html;
 }
+
+// 3. Refresh Button Listener
+const refreshBtn = document.getElementById("refresh-logs-btn");
+if (refreshBtn) {
+    refreshBtn.addEventListener("click", () => {
+        // Provide visual feedback that it is working
+        const contentArea = document.getElementById("dynamic-content");
+        contentArea.innerHTML = "<p>Refreshing delivery data...</p>";
+
+        // Call your existing fetch function
+        fetchLogs();
+    });
+}
