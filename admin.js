@@ -53,6 +53,9 @@ loginBtn.addEventListener("click", async () => {
             loginStatus.textContent = "";
             loginContainer.style.display = "none";
             dashboardContainer.style.display = "flex"; // Using flexbox for dashboard layout
+
+            // Fetch the data!
+            fetchLogs();
             
             console.log("Authentication successful.");
             // We will add the function to load the Google Sheets data here later!
@@ -79,3 +82,63 @@ passwordInput.addEventListener("keypress", function(event) {
         loginBtn.click();
     }
 });
+
+// ==========================================
+// DATA FETCHING & RENDERING
+// ==========================================
+
+async function fetchLogs() {
+    const contentArea = document.getElementById("dynamic-content");
+    contentArea.innerHTML = "<p>Loading delivery data...</p>";
+
+    const payload = { action: "GET_LOGS" };
+
+    try {
+        const response = await fetch(APPS_SCRIPT_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            renderTable(result.data);
+        } else {
+            contentArea.innerHTML = `<p style="color:red;">Error fetching data: ${result.error}</p>`;
+        }
+    } catch (err) {
+        console.error("Fetch error:", err);
+        contentArea.innerHTML = "<p style="color:red;">Failed to connect to the database.</p>";
+    }
+}
+
+function renderTable(data) {
+    const contentArea = document.getElementById("dynamic-content");
+    
+    // If sheet is completely empty
+    if (!data || data.length === 0) {
+        contentArea.innerHTML = "<p>No delivery logs found.</p>";
+        return;
+    }
+
+    let html = '<table class="data-table"><thead><tr>';
+    
+    // Create Table Headers (Row 0 from Google Sheets)
+    data[0].forEach(header => {
+        html += `<th>${header}</th>`;
+    });
+    html += '</tr></thead><tbody>';
+
+    // Create Data Rows (Row 1 onwards)
+    for (let i = 1; i < data.length; i++) {
+        html += '<tr>';
+        data[i].forEach(cell => {
+            html += `<td>${cell}</td>`;
+        });
+        html += '</tr>';
+    }
+
+    html += '</tbody></table>';
+    contentArea.innerHTML = html;
+}
