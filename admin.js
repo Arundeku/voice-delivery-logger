@@ -59,9 +59,6 @@ loginBtn.addEventListener("click", async () => {
             // Fetch the data!
             fetchLogs();
             
-
-          
-
         } else {
             // Failure: Show error message
             loginStatus.textContent = result.error;
