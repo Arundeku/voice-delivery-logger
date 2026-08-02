@@ -2,7 +2,7 @@
 // ADMIN PORTAL - Security & Logic
 // ==========================================
 
-// IMPORTANT: Paste your actual Google Apps Script URL here
+// IMPORTANT: Paste your actual Google Apps Script URL here 
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwEY8HxWAvqP9LU1tHYC7pXSyEqdwSDv0DCT8SciG-2_zOOVMICcUwiaKOk0oactJAh/exec"; 
 
 // DOM Elements - Login View
