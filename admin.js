@@ -87,27 +87,21 @@ passwordInput.addEventListener("keypress", function(event) {
 
 async function fetchLogs() {
     const contentArea = document.getElementById("dynamic-content");
-    contentArea.innerHTML = "<p>Loading delivery data...</p>";
-
-    const payload = { action: "GET_LOGS" };
+    contentArea.innerHTML = "<p>Loading delivery logs...</p>";
 
     try {
-        const response = await fetch(APPS_SCRIPT_URL, {
-            method: "POST",
-            headers: { "Content-Type": "text/plain" },
-            body: JSON.stringify(payload)
-        });
-
+        // Notice we added "?endpoint=logs" to the URL
+        const response = await fetch(APPS_SCRIPT_URL + "?endpoint=logs");
         const result = await response.json();
 
         if (result.success) {
             renderTable(result.data);
         } else {
-            contentArea.innerHTML = `<p style="color:red;">Error fetching data: ${result.error}</p>`;
+            contentArea.innerHTML = `<p style="color: red;">Failed to connect to the database: ${result.error || "Unknown error"}</p>`;
         }
-    } catch (err) {
-        console.error("Fetch error:", err);
-        contentArea.innerHTML = '<p style="color:red;">Failed to connect to the database.</p>';
+    } catch (error) {
+        console.error("Fetch error:", error);
+        contentArea.innerHTML = "<p style='color: red;'>Failed to connect to the database.</p>";
     }
 }
 
