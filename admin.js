@@ -58,9 +58,6 @@ loginBtn.addEventListener("click", async () => {
             fetchLogs();
             
             console.log("Authentication successful.");
-            
-           
-            
         } else {
             // Failure: Show error message
             loginStatus.textContent = result.error;
@@ -114,6 +111,7 @@ async function fetchLogs() {
     }
 }
 
+// REPLACED: New Editable Table Renderer
 function renderTable(data) {
     const contentArea = document.getElementById("dynamic-content");
     
@@ -123,21 +121,52 @@ function renderTable(data) {
         return;
     }
 
-    let html = '<table class="data-table"><thead><tr>';
-    
-    // Create Table Headers (Row 0 from Google Sheets)
-    data[0].forEach(header => {
-        html += `<th>${header}</th>`;
-    });
-    html += '</tr></thead><tbody>';
+    // Build the table headers. We drop "Confidence Flags" as a column 
+    // and add "Actions" for the Edit button.
+    let html = `
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Timestamp</th>
+                <th>Driver Name</th>
+                <th>Restaurants</th>
+                <th>Cylinders</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="logs-body">
+    `;
 
     // Create Data Rows (Row 1 onwards)
     for (let i = 1; i < data.length; i++) {
-        html += '<tr>';
-        data[i].forEach(cell => {
-            html += `<td>${cell}</td>`;
-        });
-        html += '</tr>';
+        const row = data[i];
+        const timestamp = row[0] || "";
+        const driver = row[1] || "";
+        const restaurant = row[2] || "";
+        const cylinders = row[3] || "";
+        const flag = row[4] || ""; 
+
+        // Create the red note only if a flag exists
+        let flagNote = "";
+        if (flag && flag.trim() !== "") {
+            flagNote = `<br><span style="color: #d93025; font-size: 0.85em;">⚠️ Note: ${flag}</span>`;
+        }
+
+        // Build the row with input fields directly in the cells
+        html += `
+          <tr>
+            <td>${timestamp}</td>
+            <td><input type="text" id="driver-${i}" value="${driver}" disabled style="border:none; background:transparent; width: 100%;"></td>
+            <td>
+              <input type="text" id="rest-${i}" value="${restaurant}" disabled style="border:none; background:transparent; width: 100%;">
+              ${flagNote}
+            </td>
+            <td><input type="number" id="cyl-${i}" value="${cylinders}" disabled style="border:none; background:transparent; width: 60px;"></td>
+            <td>
+              <button class="action-btn" id="edit-btn-${i}" onclick="toggleEdit(${i}, '${timestamp}')" style="padding: 6px 12px; margin: 0;">Edit</button>
+            </td>
+          </tr>
+        `;
     }
 
     html += '</tbody></table>';
@@ -155,4 +184,93 @@ if (refreshBtn) {
         // Call your existing fetch function
         fetchLogs();
     });
+}
+
+// ==========================================
+// INLINE EDITING ENGINE
+// ==========================================
+
+async function toggleEdit(index, timestamp) {
+    const btn = document.getElementById(`edit-btn-${index}`);
+    const driverInput = document.getElementById(`driver-${index}`);
+    const restInput = document.getElementById(`rest-${index}`);
+    const cylInput = document.getElementById(`cyl-${index}`);
+
+    if (btn.innerText === "Edit") {
+        // 1. UNLOCK THE ROW FOR EDITING
+        driverInput.disabled = false;
+        restInput.disabled = false;
+        cylInput.disabled = false;
+        
+        // Add simple borders so you know they are editable
+        driverInput.style.border = "1px solid #ccc";
+        restInput.style.border = "1px solid #ccc";
+        cylInput.style.border = "1px solid #ccc";
+        
+        driverInput.style.backgroundColor = "#fff";
+        restInput.style.backgroundColor = "#fff";
+        cylInput.style.backgroundColor = "#fff";
+        
+        btn.innerText = "Save";
+        btn.style.backgroundColor = "#34a853"; // Green to indicate save
+        btn.style.color = "white";
+        
+    } else {
+        // 2. SAVE THE CHANGES TO THE DATABASE
+        btn.innerText = "Saving...";
+        btn.disabled = true;
+
+        const payload = {
+            action: "UPDATE_DELIVERY",
+            payload: {
+                timestamp: timestamp,
+                driver_name: driverInput.value,
+                restaurant: restInput.value,
+                cylinders: cylInput.value,
+                clear_flag: true // Tells the backend to erase the warning note
+            }
+        };
+
+        try {
+            // Uses your existing APPS_SCRIPT_URL variable
+            const response = await fetch(APPS_SCRIPT_URL, { 
+                method: "POST",
+                headers: { "Content-Type": "text/plain" },
+                body: JSON.stringify(payload)
+            });
+            
+            const result = await response.json();
+
+            if (result.success) {
+                // 3. LOCK THE ROW AGAIN AND RESET UI
+                driverInput.disabled = true;
+                restInput.disabled = true;
+                cylInput.disabled = true;
+                
+                driverInput.style.border = "none";
+                restInput.style.border = "none";
+                cylInput.style.border = "none";
+                
+                driverInput.style.backgroundColor = "transparent";
+                restInput.style.backgroundColor = "transparent";
+                cylInput.style.backgroundColor = "transparent";
+                
+                btn.innerText = "Edit";
+                btn.style.backgroundColor = ""; 
+                btn.style.color = "";
+                btn.disabled = false;
+                
+                // Refresh the whole table to clear out the red note text visually
+                fetchLogs(); 
+            } else {
+                alert("Failed to update: " + result.error);
+                btn.innerText = "Save";
+                btn.disabled = false;
+            }
+        } catch (error) {
+            alert("Network Error: " + error);
+            btn.innerText = "Save";
+            btn.disabled = false;
+        }
+    }
 }
