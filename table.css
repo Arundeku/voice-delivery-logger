@@ -30,3 +30,42 @@
 .data-table tr:last-child td {
     border-bottom: none;
 }
+
+/* ==========================================
+   INLINE EDITING STYLES
+   ========================================== */
+
+/* Default state for inputs (Disabled / Locked) */
+#logs-body input {
+    width: 100%;
+    box-sizing: border-box;
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+    padding: 6px;
+    margin: 0;
+    border-radius: 4px;
+    transition: all 0.2s ease-in-out;
+    outline: none;
+}
+
+/* Active state for inputs (Enabled / Unlocked) */
+#logs-body input:not(:disabled) {
+    background-color: #ffffff !important;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+    border: 1px solid #007bff !important; /* Professional blue highlight when clicked */
+}
+
+/* Base styling for the Edit/Save buttons */
+.action-btn {
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    background-color: #f8f9fa;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.action-btn:hover {
+    background-color: #e2e6ea;
+}
