@@ -111,7 +111,9 @@ async function fetchLogs() {
     }
 }
 
-// REPLACED: New Editable Table Renderer (Now with Empties)
+// ==========================================
+// RENDER TABLE WITH AMOUNT COLUMN
+// ==========================================
 function renderTable(data) {
     const contentArea = document.getElementById("dynamic-content");
     
@@ -120,7 +122,7 @@ function renderTable(data) {
         return;
     }
 
-    // Added "Empties" to the header
+    // Build table header including 'Amount'
     let html = `
     <table class="data-table">
         <thead>
@@ -130,6 +132,7 @@ function renderTable(data) {
                 <th>Restaurants</th>
                 <th>Cylinders</th>
                 <th>Empties</th>
+                <th>Amount</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -142,8 +145,9 @@ function renderTable(data) {
         const driver = row[1] || "";
         const restaurant = row[2] || "";
         const cylinders = row[3] || "";
-        const empties = row[4] || ""; // NEW: Empties is now the 5th column (index 4)
-        const flag = row[5] || ""; // SHIFTED: Flag is now the 6th column (index 5)
+        const empties = row[4] || ""; 
+        const amount = row[5] || "";   // NEW: Amount is column index 5
+        const flag = row[6] || "";     // SHIFTED: Flag is now column index 6
 
         let flagNote = "";
         if (flag && flag.trim() !== "") {
@@ -158,8 +162,9 @@ function renderTable(data) {
               <input type="text" id="rest-${i}" value="${restaurant}" disabled style="border:none; background:transparent; width: 100%;">
               ${flagNote}
             </td>
-            <td><input type="number" id="cyl-${i}" value="${cylinders}" disabled style="border:none; background:transparent; width: 60px;"></td>
-            <td><input type="number" id="emp-${i}" value="${empties}" disabled style="border:none; background:transparent; width: 60px;"></td>
+            <td><input type="number" id="cyl-${i}" value="${cylinders}" disabled style="border:none; background:transparent; width: 50px;"></td>
+            <td><input type="number" id="emp-${i}" value="${empties}" disabled style="border:none; background:transparent; width: 50px;"></td>
+            <td><input type="number" id="amt-${i}" value="${amount}" disabled style="border:none; background:transparent; width: 70px;"></td>
             <td>
               <button class="action-btn" id="edit-btn-${i}" onclick="toggleEdit(${i}, '${timestamp}')" style="padding: 6px 12px; margin: 0;">Edit</button>
             </td>
@@ -171,50 +176,43 @@ function renderTable(data) {
     contentArea.innerHTML = html;
 }
 
-// 3. Refresh Button Listener
-const refreshBtn = document.getElementById("refresh-logs-btn");
-if (refreshBtn) {
-    refreshBtn.addEventListener("click", () => {
-        const contentArea = document.getElementById("dynamic-content");
-        contentArea.innerHTML = "<p>Refreshing delivery data...</p>";
-        fetchLogs();
-    });
-}
-
 // ==========================================
-// INLINE EDITING ENGINE
+// INLINE EDITING ENGINE (WITH AMOUNT)
 // ==========================================
-
 async function toggleEdit(index, timestamp) {
     const btn = document.getElementById(`edit-btn-${index}`);
     const driverInput = document.getElementById(`driver-${index}`);
     const restInput = document.getElementById(`rest-${index}`);
     const cylInput = document.getElementById(`cyl-${index}`);
-    const empInput = document.getElementById(`emp-${index}`); // NEW: Target Empties
+    const empInput = document.getElementById(`emp-${index}`);
+    const amtInput = document.getElementById(`amt-${index}`); // NEW: Target Amount input
 
     if (btn.innerText === "Edit") {
-        // UNLOCK
+        // UNLOCK FIELDS
         driverInput.disabled = false;
         restInput.disabled = false;
         cylInput.disabled = false;
         empInput.disabled = false;
+        amtInput.disabled = false;
         
         driverInput.style.border = "1px solid #ccc";
         restInput.style.border = "1px solid #ccc";
         cylInput.style.border = "1px solid #ccc";
         empInput.style.border = "1px solid #ccc";
+        amtInput.style.border = "1px solid #ccc";
         
         driverInput.style.backgroundColor = "#fff";
         restInput.style.backgroundColor = "#fff";
         cylInput.style.backgroundColor = "#fff";
         empInput.style.backgroundColor = "#fff";
+        amtInput.style.backgroundColor = "#fff";
         
         btn.innerText = "Save";
         btn.style.backgroundColor = "#34a853"; 
         btn.style.color = "white";
         
     } else {
-        // SAVE
+        // SAVE CHANGES
         btn.innerText = "Saving...";
         btn.disabled = true;
 
@@ -225,7 +223,8 @@ async function toggleEdit(index, timestamp) {
                 driver_name: driverInput.value,
                 restaurant: restInput.value,
                 cylinders: cylInput.value,
-                empties: empInput.value, // NEW: Send empties to backend
+                empties: empInput.value,
+                amount: amtInput.value, // NEW: Send updated amount to backend
                 clear_flag: true 
             }
         };
@@ -240,21 +239,24 @@ async function toggleEdit(index, timestamp) {
             const result = await response.json();
 
             if (result.success) {
-                // LOCK
+                // LOCK FIELDS BACK
                 driverInput.disabled = true;
                 restInput.disabled = true;
                 cylInput.disabled = true;
                 empInput.disabled = true;
+                amtInput.disabled = true;
                 
                 driverInput.style.border = "none";
                 restInput.style.border = "none";
                 cylInput.style.border = "none";
                 empInput.style.border = "none";
+                amtInput.style.border = "none";
                 
                 driverInput.style.backgroundColor = "transparent";
                 restInput.style.backgroundColor = "transparent";
                 cylInput.style.backgroundColor = "transparent";
                 empInput.style.backgroundColor = "transparent";
+                amtInput.style.backgroundColor = "transparent";
                 
                 btn.innerText = "Edit";
                 btn.style.backgroundColor = ""; 
