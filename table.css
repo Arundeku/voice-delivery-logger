@@ -56,16 +56,38 @@
     border: 1px solid #007bff !important; /* Professional blue highlight when clicked */
 }
 
-/* Base styling for the Edit/Save buttons */
+/* ==========================================
+   BUTTON STYLES (Edit & Refresh)
+   ========================================== */
+
+/* The 'Edit' Buttons in the table */
 .action-btn {
+    background-color: #ffffff;
+    color: #2c3e50; /* Dark slate text to match header */
+    border: 1px solid #2c3e50; 
     border-radius: 4px;
-    border: 1px solid #ccc;
-    background-color: #f8f9fa;
     cursor: pointer;
-    font-weight: 500;
-    transition: background-color 0.2s;
+    font-weight: 600;
+    transition: all 0.2s ease;
 }
 
 .action-btn:hover {
-    background-color: #e2e6ea;
+    background-color: #2c3e50;
+    color: #ffffff;
+}
+
+/* The 'Refresh Data' Button at the top */
+#refresh-logs-btn {
+    background-color: #2c3e50; /* Dark slate background to match header */
+    color: #ffffff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.2s ease;
+}
+
+#refresh-logs-btn:hover {
+    background-color: #1a252f; /* Slightly darker on hover */
 }
