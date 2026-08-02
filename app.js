@@ -1,7 +1,6 @@
 // ==========================================
 // CONFIGURATION
 // ==========================================
-// Replace this with your newly deployed Google Apps Script Web App URL
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwEY8HxWAvqP9LU1tHYC7pXSyEqdwSDv0DCT8SciG-2_zOOVMICcUwiaKOk0oactJAh/exec";
 
 // ==========================================
@@ -10,6 +9,10 @@ const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwEY8HxWAvqP9LU
 const driverSelect = document.getElementById("driver-select");
 const recordBtn = document.getElementById("record-btn");
 const statusText = document.getElementById("status-text");
+
+// Global holder for parsed data during review stage
+let pendingDeliveryData = {};
+let currentSelectedDriver = "";
 
 // ==========================================
 // AUDIO RECORDING VARIABLES
@@ -47,7 +50,6 @@ async function fetchDrivers() {
 // ==========================================
 // EVENT LISTENERS
 // ==========================================
-// Enable the record button ONLY when a driver is actually selected
 driverSelect.addEventListener("change", () => {
     if (driverSelect.value !== "") {
         recordBtn.disabled = false;
@@ -58,7 +60,6 @@ driverSelect.addEventListener("change", () => {
     }
 });
 
-// Handle the Record Button Click
 recordBtn.addEventListener("click", async () => {
     if (!isRecording) {
         await startRecording();
@@ -85,11 +86,10 @@ async function startRecording() {
         mediaRecorder.start();
         isRecording = true;
         
-        // Update UI
         recordBtn.textContent = "Stop Recording";
         recordBtn.classList.add("recording");
         statusText.textContent = "Listening...";
-        driverSelect.disabled = true; // Lock dropdown while recording
+        driverSelect.disabled = true; 
     } catch (err) {
         console.error("Microphone access denied:", err);
         statusText.textContent = "Please allow microphone access.";
@@ -99,32 +99,28 @@ async function startRecording() {
 function stopRecording() {
     if (mediaRecorder && mediaRecorder.state === "recording") {
         mediaRecorder.stop();
-        mediaRecorder.stream.getTracks().forEach(track => track.stop()); // Release mic
+        mediaRecorder.stream.getTracks().forEach(track => track.stop());
     }
     isRecording = false;
     
-    // Update UI
     recordBtn.textContent = "Processing...";
     recordBtn.classList.remove("recording");
     recordBtn.disabled = true; 
-    statusText.textContent = "Sending audio to pipeline...";
+    statusText.textContent = "Extracting data from voice...";
 }
 
 // ==========================================
-// DATA PIPELINE: Send to Apps Script
+// DATA PIPELINE: Process & Display Review UI
 // ==========================================
 async function processAudio() {
     const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-    
-    // Convert Blob to Base64
     const reader = new FileReader();
     reader.readAsDataURL(audioBlob);
     
     reader.onloadend = async () => {
         const base64AudioMessage = reader.result.split(',')[1];
-        const selectedDriver = driverSelect.value; // Store the dropdown selection
+        currentSelectedDriver = driverSelect.value; 
         
-        // Step 1: Send to AI for extraction
         const processPayload = {
             action: "PROCESS_AUDIO",
             audioBase64: base64AudioMessage,
@@ -132,7 +128,6 @@ async function processAudio() {
         };
 
         try {
-            statusText.textContent = "Extracting data...";
             const response = await fetch(APPS_SCRIPT_URL, {
                 method: "POST",
                 headers: { "Content-Type": "text/plain" },
@@ -142,35 +137,11 @@ async function processAudio() {
             const result = await response.json();
             
             if (result.success) {
-                statusText.textContent = "Extraction complete! Saving to sheet...";
-                console.log("Extracted Data:", result.data.extracted);
+                statusText.textContent = "Review extracted details & enter amount:";
+                pendingDeliveryData = result.data.extracted;
                 
-                // Step 2: Combine AI data with UI driver name
-                const finalData = result.data.extracted;
-                finalData.driver_name = selectedDriver; 
-                
-                const submitPayload = {
-                    action: "SUBMIT_DELIVERY",
-                    payload: finalData
-                };
-
-                // Step 3: Send the save command
-                const saveResponse = await fetch(APPS_SCRIPT_URL, {
-                    method: "POST",
-                    headers: { "Content-Type": "text/plain" },
-                    body: JSON.stringify(submitPayload)
-                });
-                
-                const saveResult = await saveResponse.json();
-                
-                if (saveResult.success) {
-                    statusText.textContent = "Delivery logged successfully!";
-                } else {
-                    statusText.textContent = "Error saving to sheet: " + saveResult.error;
-                }
-                
-                // Reset UI for next delivery
-                setTimeout(resetUI, 3000);
+                // Render the review card on screen for the driver to verify and edit
+                renderReviewInterface(pendingDeliveryData);
 
             } else {
                 statusText.textContent = "Extraction Error: " + result.error;
@@ -182,6 +153,112 @@ async function processAudio() {
             setTimeout(resetUI, 3000);
         }
     };
+}
+
+// ==========================================
+// REVIEW & EDIT INTERFACE GENERATOR
+// ==========================================
+function renderReviewInterface(data) {
+    const mainContainer = document.querySelector("main") || document.body;
+    
+    // Extract values safely
+    const restaurantVal = Array.isArray(data.restaurants) ? data.restaurants.join(', ') : (data.restaurants || "");
+    const cylindersVal = data.cylinders || 0;
+    const emptiesVal = data.empties || 0;
+
+    // Create a clean verification card overlay/replacement view
+    mainContainer.innerHTML = `
+        <div style="max-width: 400px; margin: 40px auto; padding: 25px; background: #ffffff; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); font-family: sans-serif;">
+            <h2 style="margin-top: 0; color: #2c3e50;">Review Delivery</h2>
+            <p style="font-size: 14px; color: #555;">Verify the extracted details and input the total amount collected.</p>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="font-weight: bold; font-size: 13px;">Restaurant:</label><br>
+                <input type="text" id="review-rest" value="${restaurantVal}" style="width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label style="font-weight: bold; font-size: 13px;">Cylinders Delivered:</label><br>
+                <input type="number" id="review-cyl" value="${cylindersVal}" style="width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label style="font-weight: bold; font-size: 13px;">Empties Taken:</label><br>
+                <input type="number" id="review-emp" value="${emptiesVal}" style="width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="font-weight: bold; font-size: 13px; color: #d93025;">Amount (₹) *Required:</label><br>
+                <input type="number" id="review-amt" placeholder="Enter amount manually" autofocus style="width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; border: 2px solid #007bff; border-radius: 4px; font-size: 16px;">
+            </div>
+
+            <button id="submit-final-btn" style="width: 100%; background: #34a853; color: white; padding: 12px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 16px;">Submit to Sheet</button>
+        </div>
+    `;
+
+    // Hook up button click listener
+    document.getElementById("submit-final-btn").addEventListener("click", submitFinalDataToSheet);
+
+    // Allow hitting 'Enter' directly from the amount field to trigger submission instantly
+    document.getElementById("review-amt").addEventListener("keypress", function(event) {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            submitFinalDataToSheet();
+        }
+    });
+}
+
+// ==========================================
+// SUBMIT VERIFIED DATA TO GOOGLE SHEETS
+// ==========================================
+async function submitFinalDataToSheet() {
+    const restaurantInput = document.getElementById("review-rest").value;
+    const cylindersInput = parseInt(document.getElementById("review-cyl").value) || 0;
+    const emptiesInput = parseInt(document.getElementById("review-emp").value) || 0;
+    const amountInput = parseFloat(document.getElementById("review-amt").value) || 0;
+
+    const submitBtn = document.getElementById("submit-final-btn");
+    submitBtn.textContent = "Saving to Sheet...";
+    submitBtn.disabled = true;
+
+    // Package the final verified data
+    const finalData = {
+        driver_name: currentSelectedDriver,
+        restaurants: [restaurantInput],
+        cylinders: cylindersInput,
+        empties: emptiesInput,
+        amount: amountInput,
+        confidence_flags: pendingDeliveryData.confidence_flags || []
+    };
+
+    const submitPayload = {
+        action: "SUBMIT_DELIVERY",
+        payload: finalData
+    };
+
+    try {
+        const saveResponse = await fetch(APPS_SCRIPT_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify(submitPayload)
+        });
+        
+        const saveResult = await saveResponse.json();
+        
+        if (saveResult.success) {
+            alert("Delivery logged successfully!");
+            location.reload(); // Refresh the page to reset everything for the next delivery
+        } else {
+            alert("Error saving to sheet: " + saveResult.error);
+            submitBtn.textContent = "Submit to Sheet";
+            submitBtn.disabled = false;
+        }
+    } catch (err) {
+        console.error("Save error:", err);
+        alert("Network error. Could not connect to backend.");
+        submitBtn.textContent = "Submit to Sheet";
+        submitBtn.disabled = false;
+    }
 }
 
 function resetUI() {
