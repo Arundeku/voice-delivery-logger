@@ -62,9 +62,9 @@
 
 /* The 'Edit' Buttons in the table */
 .action-btn {
-    background-color: #ffffff;
-    color: #2c3e50; /* Dark slate text to match header */
-    border: 1px solid #2c3e50; 
+    background-color: #ffffff !important;
+    color: #2c3e50 !important; /* Forces dark slate text */
+    border: 1px solid #2c3e50 !important; 
     border-radius: 4px;
     cursor: pointer;
     font-weight: 600;
@@ -72,14 +72,14 @@
 }
 
 .action-btn:hover {
-    background-color: #2c3e50;
-    color: #ffffff;
+    background-color: #2c3e50 !important;
+    color: #ffffff !important;
 }
 
 /* The 'Refresh Data' Button at the top */
 #refresh-logs-btn {
-    background-color: #2c3e50; /* Dark slate background to match header */
-    color: #ffffff;
+    background-color: #2c3e50 !important; /* Forces dark slate background */
+    color: #ffffff !important;
     border: none;
     padding: 8px 16px;
     border-radius: 4px;
@@ -89,5 +89,5 @@
 }
 
 #refresh-logs-btn:hover {
-    background-color: #1a252f; /* Slightly darker on hover */
+    background-color: #1a252f !important;
 }
