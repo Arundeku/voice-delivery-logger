@@ -270,3 +270,141 @@ async function toggleEdit(index, timestamp) {
         }
     }
 }
+
+// ==========================================
+// NAVIGATION & SIDEBAR SWITCHING
+// ==========================================
+const navLogs = document.getElementById("nav-logs");
+const navRequests = document.getElementById("nav-requests");
+const pageTitle = document.getElementById("page-title");
+
+navLogs.addEventListener("click", () => {
+    setActiveNav(navLogs);
+    pageTitle.textContent = "Delivery Logs";
+    fetchLogs(); // Existing function to load logs
+});
+
+navRequests.addEventListener("click", () => {
+    setActiveNav(navRequests);
+    pageTitle.textContent = "Customer Requests";
+    fetchCustomerRequests();
+});
+
+function setActiveNav(selectedItem) {
+    document.querySelectorAll(".sidebar li").forEach(li => li.classList.remove("active"));
+    selectedItem.classList.add("active");
+}
+
+// ==========================================
+// FETCH & RENDER CUSTOMER REQUESTS
+// ==========================================
+async function fetchCustomerRequests() {
+    const contentArea = document.getElementById("dynamic-content");
+    contentArea.innerHTML = "<p>Loading requests...</p>";
+
+    try {
+        const response = await fetch(`${APPS_SCRIPT_URL}?action=GET_CUSTOMER_REQUESTS`);
+        const result = await response.json();
+
+        if (result.success) {
+            renderRequestsTable(result.data);
+        } else {
+            contentArea.innerHTML = `<p style="color:red;">Error: ${result.error}</p>`;
+        }
+    } catch (err) {
+        contentArea.innerHTML = `<p style="color:red;">Failed to connect to database.</p>`;
+    }
+}
+
+function renderRequestsTable(data) {
+    const contentArea = document.getElementById("dynamic-content");
+
+    // Filter out header row if present and check length
+    const requests = data.slice(1);
+
+    if (!requests || requests.length === 0) {
+        contentArea.innerHTML = "<p>No cylinder requests found.</p>";
+        return;
+    }
+
+    let html = `
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Order ID</th>
+                <th>Timestamp</th>
+                <th>Restaurant Name</th>
+                <th>Required Date</th>
+                <th>Cylinders</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+    `;
+
+    requests.forEach(row => {
+        const orderId = row[0];
+        const timestamp = new Date(row[1]).toLocaleString();
+        const restaurantName = row[2];
+        const requiredDate = row[3];
+        const cylinders = row[4];
+        const status = row[5];
+
+        const isPending = status === "Pending";
+        const statusBadge = isPending 
+            ? `<span style="color: #e67e22; font-weight: bold;">Pending</span>`
+            : `<span style="color: #27ae60; font-weight: bold;">${status}</span>`;
+
+        html += `
+          <tr>
+            <td><strong>${orderId}</strong></td>
+            <td>${timestamp}</td>
+            <td>${restaurantName}</td>
+            <td>${requiredDate}</td>
+            <td>${cylinders}</td>
+            <td>${statusBadge}</td>
+            <td>
+              ${isPending 
+                ? `<button class="action-btn" onclick="acceptOrder('${orderId}')" style="background:#34a853; color:white;">Accept Request</button>` 
+                : `<button disabled style="opacity:0.5;">Accepted</button>`
+              }
+            </td>
+          </tr>
+        `;
+    });
+
+    html += `</tbody></table>`;
+    contentArea.innerHTML = html;
+}
+
+// ==========================================
+// ACCEPT ORDER FUNCTION
+// ==========================================
+async function acceptOrder(orderId) {
+    if (!confirm(`Are you sure you want to accept order ${orderId}?`)) return;
+
+    const payload = {
+        action: "ACCEPT_ORDER",
+        payload: { orderId: orderId }
+    };
+
+    try {
+        const response = await fetch(APPS_SCRIPT_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            alert(`Order ${orderId} has been accepted!`);
+            fetchCustomerRequests(); // Refresh table view
+        } else {
+            alert("Error updating order: " + result.error);
+        }
+    } catch (err) {
+        alert("Network error. Could not accept order.");
+    }
+}
