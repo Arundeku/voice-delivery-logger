@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Partner Portal</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f8f9fa; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .portal-card { background: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); width: 100%; max-width: 400px; text-align: center; }
+        h2 { color: #2c3e50; margin-bottom: 25px; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; font-size: 14px; }
+        button { width: 100%; padding: 12px; background: #34495e; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 15px; transition: background 0.3s; }
+        button:hover { background: #2c3e50; }
+        .link { color: #3498db; cursor: pointer; font-size: 13px; margin-top: 15px; display: block; text-decoration: underline; }
+        .hidden { display: none; }
+        #status-msg { margin-top: 15px; font-size: 14px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen" class="portal-card">
+        <h2>Partner Login</h2>
+        <input type="text" id="login-phone" placeholder="Registered Phone Number">
+        <input type="password" id="login-password" placeholder="Password">
+        <button id="login-btn">Secure Login</button>
+        <span class="link" id="go-to-reg">New Partner? Register here</span>
+        <div id="login-status" id="status-msg"></div>
+    </div>
+
+    <!-- REGISTRATION SCREEN -->
+    <div id="register-screen" class="portal-card hidden">
+        <h2>Register Account</h2>
+        <input type="text" id="reg-rest" placeholder="Restaurant Name">
+        <input type="text" id="reg-name" placeholder="Contact Person">
+        <input type="text" id="reg-phone" placeholder="Phone Number">
+        <input type="password" id="reg-password" placeholder="Create Password">
+        <button id="register-btn">Create Account</button>
+        <span class="link" id="go-to-login">Already registered? Login</span>
+        <div id="reg-status" id="status-msg"></div>
+    </div>
+
+    <!-- BOOKING DASHBOARD -->
+    <div id="dashboard-screen" class="portal-card hidden">
+        <h2 id="welcome-msg">Order Dashboard</h2>
+        <p style="font-size: 13px; color: #7f8c8d; text-align: left;">Select Date & Quantity</p>
+        <input type="date" id="book-date">
+        <input type="number" id="book-qty" placeholder="Number of Cylinders" min="1">
+        <button id="book-btn" style="background: #27ae60;">Submit Request</button>
+        <div id="book-status" id="status-msg"></div>
+    </div>
+
+    <script src="customer.js"></script>
+</body>
+</html>
