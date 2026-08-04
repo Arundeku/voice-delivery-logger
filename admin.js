@@ -32,11 +32,13 @@ loginBtn.addEventListener("click", async () => {
     loginStatus.style.color = "#555";
     loginBtn.disabled = true;
 
-    // Package the request
+    // FIXED: Package the request to exactly match Code.gs expectations
     const payload = {
-        action: "LOGIN",
-        username: username,
-        password: password
+        action: "ADMIN_LOGIN", // Changed from "LOGIN"
+        payload: {             // Nested the credentials inside payload
+            username: username,
+            password: password
+        }
     };
 
     try {
@@ -52,15 +54,15 @@ loginBtn.addEventListener("click", async () => {
             // Success: Hide login, show dashboard
             loginStatus.textContent = "";
             loginContainer.style.display = "none";
-            dashboardContainer.style.display = "flex"; // Using flexbox for dashboard layout
+            dashboardContainer.style.display = "flex";
 
              // Fetch the data!
             fetchLogs();
             
             console.log("Authentication successful.");
         } else {
-            // Failure: Show error message
-            loginStatus.textContent = result.error;
+            // FIXED: Look for result.message instead of result.error
+            loginStatus.textContent = result.message || result.error || "Login Failed.";
             loginStatus.style.color = "red";
         }
     } catch (err) {
@@ -72,7 +74,6 @@ loginBtn.addEventListener("click", async () => {
         loginBtn.disabled = false;
     }
 });
-
 // 2. Quality of Life: Allow hitting 'Enter' to log in
 passwordInput.addEventListener("keypress", function(event) {
     if (event.key === "Enter") {
