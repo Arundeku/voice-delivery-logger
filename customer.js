@@ -1,5 +1,5 @@
 // Paste your exact Apps Script /exec URL here
-const APPS_SCRIPT_URL = "YOUR_APPS_SCRIPT_URL_HERE"; 
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwEY8HxWAvqP9LU1tHYC7pXSyEqdwSDv0DCT8SciG-2_zOOVMICcUwiaKOk0oactJAh/exec"; 
 
 // Navigation Toggles
 document.getElementById('go-to-reg').addEventListener('click', () => {
