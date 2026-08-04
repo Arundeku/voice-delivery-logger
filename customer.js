@@ -14,20 +14,40 @@ document.getElementById('go-to-login').addEventListener('click', () => {
 
 let currentRestaurant = ""; // Store this after login
 
-// 1. REGISTER LOGIC
-document.getElementById('register-btn').addEventListener('click', async () => {
-    const btn = document.getElementById('register-btn');
+// 1. REGISTRATION & OTP LOGIC
+document.getElementById('send-otp-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('send-otp-btn');
     const status = document.getElementById('reg-status');
     
-    btn.innerText = "Registering...";
-    
+    const restName = document.getElementById('reg-rest').value.trim();
+    const contact = document.getElementById('reg-name').value.trim();
+    const phone = document.getElementById('reg-phone').value.trim();
+    const password = document.getElementById('reg-password').value;
+
+    if (!restName || !contact || !phone || !password) {
+        status.innerText = "Please fill out all fields.";
+        status.style.color = "red";
+        return;
+    }
+
+    // STRICT PASSWORD SECURITY CHECK
+    const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!passwordPattern.test(password)) {
+        status.innerText = "Password must be at least 8 characters long and include an uppercase letter, a lowercase letter, a number, and a special character (e.g., @$!%*?&).";
+        status.style.color = "red";
+        return;
+    }
+
+    btn.innerText = "Sending SMS...";
+    btn.disabled = true;
+
     const payload = {
-        action: "REGISTER_CUSTOMER",
+        action: "SEND_OTP",
         payload: {
-            restaurantName: document.getElementById('reg-rest').value,
-            contactPerson: document.getElementById('reg-name').value,
-            phone: document.getElementById('reg-phone').value,
-            password: document.getElementById('reg-password').value
+            restaurantName: restName,
+            contactPerson: contact,
+            phone: phone,
+            password: password 
         }
     };
 
@@ -40,12 +60,67 @@ document.getElementById('register-btn').addEventListener('click', async () => {
         status.innerText = result.message;
         status.style.color = result.success ? "green" : "red";
         
-        if(result.success) setTimeout(() => document.getElementById('go-to-login').click(), 1500);
+        if(result.success) {
+            // Hide Step 1 inputs, show Step 2 OTP inputs
+            document.getElementById('reg-step-1').classList.add('hidden');
+            document.getElementById('reg-step-2').classList.remove('hidden');
+        }
     } catch (err) {
-        status.innerText = "Network Error";
+        status.innerText = "Network Error while sending OTP.";
         status.style.color = "red";
     } finally {
-        btn.innerText = "Create Account";
+        btn.innerText = "Send OTP Verification";
+        btn.disabled = false;
+    }
+});
+
+// VERIFY OTP BUTTON
+document.getElementById('verify-btn').addEventListener('click', async () => {
+    const btn = document.getElementById('verify-btn');
+    const status = document.getElementById('reg-status');
+    const phone = document.getElementById('reg-phone').value.trim();
+    const otp = document.getElementById('reg-otp').value.trim();
+
+    if (!otp) {
+        status.innerText = "Please enter the OTP.";
+        status.style.color = "red";
+        return;
+    }
+
+    btn.innerText = "Verifying...";
+    btn.disabled = true;
+
+    const payload = {
+        action: "VERIFY_OTP",
+        payload: {
+            phone: phone,
+            otp: otp
+        }
+    };
+
+    try {
+        const response = await fetch(APPS_SCRIPT_URL, {
+            method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        
+        status.innerText = result.message;
+        status.style.color = result.success ? "green" : "red";
+        
+        if(result.success) {
+            setTimeout(() => {
+                // Reset form and return to login screen
+                document.getElementById('reg-step-2').classList.add('hidden');
+                document.getElementById('reg-step-1').classList.remove('hidden');
+                document.getElementById('go-to-login').click();
+            }, 2000);
+        }
+    } catch (err) {
+        status.innerText = "Network Error while verifying OTP.";
+        status.style.color = "red";
+    } finally {
+        btn.innerText = "Verify & Register";
+        btn.disabled = false;
     }
 });
 
